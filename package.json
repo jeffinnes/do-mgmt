@@ -1,0 +1,32 @@
+{
+  "name": "do-mgmt",
+  "version": "1.0.0",
+  "description": "Digital Ocean Management CLI Tool",
+  "main": "app.js",
+  "bin": {
+    "do-mgmt": "./bin/do-mgmt.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeffinnes/do-mgmt.git"
+  },
+  "author": "Jeff Innes",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jeffinnes/do-mgmt/issues"
+  },
+  "homepage": "https://github.com/jeffinnes/do-mgmt#readme",
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.1"
+  },
+  "dependencies": {
+    "commander": "^5.1.0",
+    "configstore": "^5.0.1",
+    "inquirer": "^7.1.0"
+  }
+}
