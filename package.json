@@ -27,6 +27,7 @@
   "dependencies": {
     "commander": "^5.1.0",
     "configstore": "^5.0.1",
-    "inquirer": "^7.1.0"
+    "inquirer": "^7.1.0",
+    "superagent": "^6.1.0"
   }
 }
