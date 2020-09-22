@@ -52,6 +52,7 @@ program
         choices: ['Modify an existing rule',
           'Add a rule',
           'Remove a rule',
+          'Exit',
         ],
       },
     ]).then((actionChoice) => {
@@ -103,9 +104,8 @@ program
               ports: ports,
               sources: { addresses: addresses },
             });
-            console.log(selectedFirewall);
             const addRuleResult = await fw.addInboundRule(selectedFirewall);
-            console.log(addRuleResult);
+            console.log('done');
           } else {
             // Call outbound rule creator
           }
@@ -118,6 +118,7 @@ program
       if (actionChoice.actionToTake === 'Remove a rule') {
         console.log('Remove logic');
       }
+
     }).catch((error) => {
       console.log(error);
     });
