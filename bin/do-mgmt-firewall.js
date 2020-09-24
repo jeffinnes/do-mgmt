@@ -29,9 +29,8 @@ program
     // Display Firewall Info then prompt for actions
     const filteredFirewallArray = firewalls.filter((f) => f.name === answer.firewall);
     const selectedFirewall = filteredFirewallArray[0];
-    console.log(selectedFirewall);
 
-    /* console.log(`Name: ${selectedFirewall.name}`);
+    console.log(`Name: ${selectedFirewall.name}`);
     console.log(`ID: ${selectedFirewall.id}`);
     console.log('Inbound Rules:');
     selectedFirewall.inbound_rules.forEach((inRule) => console.log(inRule));
@@ -41,7 +40,7 @@ program
       console.log('PENDING CHANGES:');
       selectedFirewall.pending_changes.forEach((pendingChange) => console.log(pendingChange));
     }
-    console.log(''); */
+    console.log('');
 
     // Choose an action to take on the firewall
     inquirer.prompt([
@@ -56,9 +55,38 @@ program
         ],
       },
     ]).then((actionChoice) => {
-      // ToDo
+      // ToDo If the user wants to MODIFY a rule
       if (actionChoice.actionToTake === 'Modify an existing rule') {
         console.log('Modifiy logic');
+        /* Storeing this as a comment here because I think it is close to the modify logic instead of the ADD logic where I first had it
+        .then(async (ruleAnswers) => {
+          const ports = ruleAnswers.ports.trim();
+          const addresses = ruleAnswers.addresses.split(',');
+
+          for (let i = 0; i < addresses.length; i++) {
+            addresses[i] = addresses[i].trim();
+          }
+
+          if (ruleAnswers.ruleDirection === 'Inbound') {
+            selectedFirewall.inbound_rules.push({
+              protocol: ruleAnswers.protocol,
+              ports: ports,
+              sources: { addresses: addresses },
+            });
+            const addRuleResult = await fw.addRule(selectedFirewall);
+            console.log('done');
+          } else {
+            selectedFirewall.outbound_rules.push({
+              protocol: ruleAnswers.protocol,
+              ports: ports,
+              sources: { addresses: addresses },
+            });
+            const addRuleResult = await fw.addRule(selectedFirewall);
+            console.log('done');
+          }
+        }).catch((error) => {
+          console.log(error);
+        }); */
       }
 
       // If the user wants to add a rule
@@ -67,7 +95,7 @@ program
           {
             type: 'list',
             name: 'ruleDirection',
-            message: 'Inbound or Outbound rule?',
+            message: 'Add an Inbound or Outbound rule?',
             choices: ['Inbound', 'Outbound'],
             default: 'Inbound',
           },
@@ -99,26 +127,83 @@ program
           }
 
           if (ruleAnswers.ruleDirection === 'Inbound') {
-            selectedFirewall.inbound_rules.push({
+            const rule = {
               protocol: ruleAnswers.protocol,
               ports: ports,
               sources: { addresses: addresses },
-            });
-            const addRuleResult = await fw.addInboundRule(selectedFirewall);
+            };
+            const addRuleResult = await fw.addRule(selectedFirewall, rule, 'inbound_rules');
             console.log('done');
           } else {
-            // Call outbound rule creator
+            const rule = {
+              protocol: ruleAnswers.protocol,
+              ports: ports,
+              destinations: { addresses: addresses },
+            };
+            const addRuleResult = await fw.addRule(selectedFirewall, rule, 'outbound_rules');
+            console.log('done');
           }
         }).catch((error) => {
           console.log(error);
         });
       }
 
-      // ToDo
+      // If the user wants to REMOVE a rule
       if (actionChoice.actionToTake === 'Remove a rule') {
-        console.log('Remove logic');
-      }
+        inquirer.prompt([
+          {
+            type: 'list',
+            name: 'ruleDirection',
+            message: 'Remove an Inbound or Outbound rule?',
+            choices: ['Inbound', 'Outbound'],
+            default: 'Inbound',
+          },
+        ]).then((removeDirectionAnswer) => {
+          if (removeDirectionAnswer.ruleDirection === 'Inbound') {
+            const inboundRulesAsStrings = [];
+            selectedFirewall.inbound_rules.forEach((rule) => {
+              inboundRulesAsStrings.push(JSON.stringify(rule));
+            });
 
+            inquirer.prompt([
+              {
+                type: 'list',
+                name: 'rule',
+                message: 'Select an INBOUND rule to remove',
+                choices: inboundRulesAsStrings,
+                default: 'none',
+              },
+            ]).then(async (ruleToRemove) => {
+              const removeRuleResult = await fw.deleteRule(selectedFirewall, ruleToRemove.rule, 'inbound_rules');
+              console.log('done');
+            }).catch((error) => {
+              console.log(error);
+            });
+          } else {
+            const outboundRulesAsStrings = [];
+            selectedFirewall.outbound_rules.forEach((rule) => {
+              outboundRulesAsStrings.push(JSON.stringify(rule));
+            });
+
+            inquirer.prompt([
+              {
+                type: 'list',
+                name: 'rule',
+                message: 'Select an OUTBOUND rule to remove',
+                choices: outboundRulesAsStrings,
+                default: 'none',
+              },
+            ]).then(async (ruleToRemove) => {
+              const removeRuleResult = await fw.deleteRule(selectedFirewall, ruleToRemove.rule, 'outbound_rules');
+              console.log('done');
+            }).catch((error) => {
+              console.log(error);
+            });
+          }
+        }).catch((error) => {
+          console.log(error);
+        });
+      }
     }).catch((error) => {
       console.log(error);
     });
