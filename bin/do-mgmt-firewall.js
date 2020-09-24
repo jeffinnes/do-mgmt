@@ -1,11 +1,10 @@
 /* eslint-disable no-console */
 const program = require('commander');
 const inquirer = require('inquirer');
-const ora = require('ora');
 const fw = require('../lib/firewall');
 
 // Initialize the list array
-let firewallList = [];
+const firewallList = [];
 
 // Commander parses arguments
 program
@@ -57,37 +56,110 @@ program
     ]).then((actionChoice) => {
       // ToDo If the user wants to MODIFY a rule
       if (actionChoice.actionToTake === 'Modify an existing rule') {
-        console.log('Modifiy logic');
-        /* Storeing this as a comment here because I think it is close to the modify logic instead of the ADD logic where I first had it
-        .then(async (ruleAnswers) => {
-          const ports = ruleAnswers.ports.trim();
-          const addresses = ruleAnswers.addresses.split(',');
+        inquirer.prompt([
+          {
+            type: 'list',
+            name: 'ruleDirection',
+            message: 'Select a rule to modify',
+            choices: ['Inbound', 'Outbound'],
+          },
+        ]).then(async (directionAnswer) => {
+          const choices = [];
 
-          for (let i = 0; i < addresses.length; i++) {
-            addresses[i] = addresses[i].trim();
-          }
-
-          if (ruleAnswers.ruleDirection === 'Inbound') {
-            selectedFirewall.inbound_rules.push({
-              protocol: ruleAnswers.protocol,
-              ports: ports,
-              sources: { addresses: addresses },
-            });
-            const addRuleResult = await fw.addRule(selectedFirewall);
-            console.log('done');
+          if (directionAnswer.ruleDirection === 'Inbound') {
+            // Turn each rule into a string and prepend the array index + 1
+            // then push into choices array
+            for (let i = 0; i < selectedFirewall.inbound_rules.length; i += 1) {
+              choices.push(`${i + 1}. ${JSON.stringify(selectedFirewall.inbound_rules[i])}`);
+            }
           } else {
-            selectedFirewall.outbound_rules.push({
-              protocol: ruleAnswers.protocol,
-              ports: ports,
-              sources: { addresses: addresses },
-            });
-            const addRuleResult = await fw.addRule(selectedFirewall);
-            console.log('done');
+            for (let i = 0; i < selectedFirewall.outbound_rules.length; i += 1) {
+              choices.push(`${i + 1}. ${JSON.stringify(selectedFirewall.outbound_rules[i])}`);
+            }
           }
+
+          inquirer.prompt([
+            {
+              type: 'list',
+              name: 'rule',
+              message: `Select an ${directionAnswer.ruleDirection} rule to modify`,
+              choices: choices,
+            },
+          ]).then(async (selectedRule) => {
+            const ruleData = selectedRule.rule.split('. ');
+            ruleData[0] = Number.parseInt(ruleData[0], 10) - 1;
+            ruleData[1] = JSON.parse(ruleData[1]);
+            if (ruleData[1].ports === 0) {
+              ruleData[1].ports = 'all';
+            }
+
+            console.log(`Currently the rule is set as\n${JSON.stringify(ruleData[1])}\nPlease answer the questions below to modify the rule (default values are the current setting)`);
+
+            let modQuestions = [
+              {
+                type: 'list',
+                name: 'protocol',
+                message: 'Select protocol:',
+                choices: ['tcp', 'udp'],
+                default: ruleData[1].protocol,
+              },
+              {
+                type: 'input',
+                name: 'ports',
+                message: 'Enter a single port (80), range of ports (8000-9000), or "all":',
+                default: ruleData[1].ports,
+              },
+              {
+                type: 'input',
+                name: 'addresses',
+                message: 'Addresses to allow traffic to or from. Separate addresses with a comma.',
+                default: '',
+              },
+            ];
+
+            if (directionAnswer.ruleDirection === 'Inbound') {
+              modQuestions[2].default = `${ruleData[1].sources.addresses}`;
+            } else {
+              modQuestions[2].default = `${ruleData[1].destinations.addresses}`;
+            }
+
+            inquirer.prompt(modQuestions).then(async (ruleAnswers) => {
+              const ports = ruleAnswers.ports.trim();
+              const addresses = ruleAnswers.addresses.split(',');
+
+              for (let i = 0; i < addresses.length; i += 1) {
+                addresses[i] = addresses[i].trim();
+              }
+
+              if (directionAnswer.ruleDirection === 'Inbound') {
+                selectedFirewall.inbound_rules[ruleData[0]] = {
+                  protocol: ruleAnswers.protocol,
+                  ports: ports,
+                  sources: { addresses: addresses },
+                };
+                const addRuleResult = await fw.modifyRule(selectedFirewall);
+                console.log('done');
+              } else {
+                selectedFirewall.outbound_rules[ruleData[0]] = {
+                  protocol: ruleAnswers.protocol,
+                  ports: ports,
+                  destinations: { addresses: addresses },
+                };
+                const addRuleResult = await fw.modifyRule(selectedFirewall);
+                console.log('done');
+              }
+            }).catch((error) => {
+              console.log(error);
+            });
+          }).catch((error) => {
+            console.log(error);
+          });
         }).catch((error) => {
           console.log(error);
-        }); */
+        });
       }
+
+
 
       // If the user wants to add a rule
       if (actionChoice.actionToTake === 'Add a rule') {
@@ -122,7 +194,7 @@ program
           const ports = ruleAnswers.ports.trim();
           const addresses = ruleAnswers.addresses.split(',');
 
-          for (let i = 0; i < addresses.length; i++) {
+          for (let i = 0; i < addresses.length; i += 1) {
             addresses[i] = addresses[i].trim();
           }
 
@@ -156,7 +228,6 @@ program
             name: 'ruleDirection',
             message: 'Remove an Inbound or Outbound rule?',
             choices: ['Inbound', 'Outbound'],
-            default: 'Inbound',
           },
         ]).then((removeDirectionAnswer) => {
           if (removeDirectionAnswer.ruleDirection === 'Inbound') {
