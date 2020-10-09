@@ -1,6 +1,9 @@
 # do-mgmt
 Digital Ocean Management CLI
 
+## Current Features
+Manage Firewall rules
+
 ## To use
 
 Currently this app is unpublished so it cannot be installed directly. To use:
